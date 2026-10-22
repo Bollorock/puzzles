@@ -187,6 +187,8 @@ export class Board {
     let fallback: number | null = null;
     for (let i = this.game.zOrder.length - 1; i >= 0; i--) {
       const g = this.game.groups.get(this.game.zOrder[i])!;
+      // Locked pieces can't be picked up; touching them pans instead.
+      if (g.locked) continue;
       for (const pid of g.pieces) {
         const p = this.game.piecePos(pid);
         const lx = b.x - p.x;

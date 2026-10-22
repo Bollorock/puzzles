@@ -11,6 +11,8 @@ export interface Group {
   x: number;
   y: number;
   pieces: number[];
+  /** Fixed at its true spot in the frame; it can no longer be dragged. */
+  locked: boolean;
 }
 
 export interface SavedGame {
@@ -25,7 +27,7 @@ export interface SavedGame {
   /** Group id for each piece, or -1 when the piece is in the tray. */
   pieceGroup: number[];
   /** Groups in z order, bottom first. */
-  groups: { id: number; x: number; y: number }[];
+  groups: { id: number; x: number; y: number; locked?: boolean }[];
   camera?: { x: number; y: number; zoom: number };
   filter: TrayFilter;
   elapsedMs: number;
@@ -65,7 +67,7 @@ export class Game {
   static fromSave(s: SavedGame): Game {
     const g = new Game(s.seed, s.width, s.height, s.cols, s.rows, s.trayOrder);
     for (const sg of s.groups) {
-      g.groups.set(sg.id, { id: sg.id, x: sg.x, y: sg.y, pieces: [] });
+      g.groups.set(sg.id, { id: sg.id, x: sg.x, y: sg.y, pieces: [], locked: !!sg.locked });
       g.zOrder.push(sg.id);
       g.nextGroupId = Math.max(g.nextGroupId, sg.id + 1);
     }
@@ -94,7 +96,7 @@ export class Game {
       pieceGroup: [...this.pieceGroup],
       groups: this.zOrder.map((id) => {
         const g = this.groups.get(id)!;
-        return { id, x: g.x, y: g.y };
+        return { id, x: g.x, y: g.y, locked: g.locked };
       }),
       ...extra,
     };
@@ -138,6 +140,7 @@ export class Game {
       x: x - p.col * this.layout.pieceW,
       y: y - p.row * this.layout.pieceH,
       pieces: [pid],
+      locked: false,
     };
     this.groups.set(group.id, group);
     this.zOrder.push(group.id);
@@ -145,10 +148,10 @@ export class Game {
     return group;
   }
 
-  /** Puts a single-piece group back into the tray. */
+  /** Puts a single-piece group back into the tray. Locked pieces stay put. */
   returnToTray(gid: number): boolean {
     const g = this.groups.get(gid);
-    if (!g || g.pieces.length !== 1) return false;
+    if (!g || g.locked || g.pieces.length !== 1) return false;
     this.pieceGroup[g.pieces[0]] = -1;
     this.removeGroup(gid);
     return true;
@@ -166,27 +169,56 @@ export class Game {
     this.zOrder.push(gid);
   }
 
+  /** Locked groups sit below the loose pieces so those stay visible and grabbable. */
+  sendToBack(gid: number) {
+    this.zOrder = this.zOrder.filter((id) => id !== gid);
+    this.zOrder.unshift(gid);
+  }
+
   moveGroup(gid: number, x: number, y: number) {
     const g = this.groups.get(gid)!;
+    if (g.locked) return;
     g.x = x;
     g.y = y;
   }
 
   /**
    * Joins the group with any neighbouring group whose pieces line up within
-   * `tolerance` board units. Returns the id of the resulting group and
-   * whether anything snapped.
+   * `tolerance` board units, and locks it into the frame when it holds a
+   * corner piece that is that close to its true spot. Returns the id of the
+   * resulting group and whether anything snapped.
    */
   snap(gid: number, tolerance: number): { gid: number; snapped: boolean } {
     let snapped = false;
     let current = gid;
     for (;;) {
       const target = this.findSnapTarget(current, tolerance);
-      if (target === null) break;
-      current = this.merge(current, target);
+      if (target !== null) {
+        current = this.merge(current, target);
+      } else if (!this.lockToFrame(current, tolerance)) {
+        break;
+      }
       snapped = true;
     }
     return { gid: current, snapped };
+  }
+
+  isCorner(pid: number): boolean {
+    const { col, row } = this.pieces[pid];
+    const { cols, rows } = this.layout;
+    return (col === 0 || col === cols - 1) && (row === 0 || row === rows - 1);
+  }
+
+  /** Puts a group with a corner piece at its true spot and locks it there. */
+  private lockToFrame(gid: number, tolerance: number): boolean {
+    const g = this.groups.get(gid)!;
+    if (g.locked || Math.hypot(g.x, g.y) > tolerance) return false;
+    if (!g.pieces.some((pid) => this.isCorner(pid))) return false;
+    g.x = 0;
+    g.y = 0;
+    g.locked = true;
+    this.sendToBack(gid);
+    return true;
   }
 
   private findSnapTarget(gid: number, tolerance: number): number | null {
@@ -217,21 +249,27 @@ export class Game {
     return best;
   }
 
-  /** Merges `moving` into `target`, aligning to the target. Returns the surviving id. */
+  /**
+   * Merges `moving` into `target`, aligning to the target, or to whichever
+   * group is locked into the frame. Returns the surviving id.
+   */
   private merge(moving: number, target: number): number {
     const a = this.groups.get(moving)!;
     const b = this.groups.get(target)!;
     // Keep the bigger group's id so z order stays stable, but take the
     // moving group's z position (it was just dropped on top).
     const [keep, drop] = b.pieces.length >= a.pieces.length ? [b, a] : [a, b];
-    keep.x = b.x;
-    keep.y = b.y;
+    const anchor = a.locked ? a : b;
+    keep.x = anchor.x;
+    keep.y = anchor.y;
+    keep.locked = a.locked || b.locked;
     for (const pid of drop.pieces) {
       keep.pieces.push(pid);
       this.pieceGroup[pid] = keep.id;
     }
     this.removeGroup(drop.id);
-    this.bringToFront(keep.id);
+    if (keep.locked) this.sendToBack(keep.id);
+    else this.bringToFront(keep.id);
     return keep.id;
   }
 

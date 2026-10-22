@@ -117,6 +117,39 @@ describe('Game', () => {
     expect(g.trayPieces('all')).toHaveLength(10);
   });
 
+  it('locks corner pieces into the frame', () => {
+    const g = make();
+    // Piece 3 is the top-right corner; its true spot is (300, 0).
+    const corner = g.placeFromTray(3, 300 + 6, -4);
+    expect(g.snap(corner.id, 10)).toEqual({ gid: corner.id, snapped: true });
+    expect(g.piecePos(3)).toEqual({ x: 300, y: 0 });
+    expect(corner.locked).toBe(true);
+    g.moveGroup(corner.id, 50, 50);
+    expect(g.piecePos(3)).toEqual({ x: 300, y: 0 });
+    expect(g.returnToTray(corner.id)).toBe(false);
+    expect(g.gatherSingles()).toBe(0);
+
+    // A non-corner piece near its spot does not lock on its own.
+    const edge = g.placeFromTray(1, 100 + 3, 2);
+    expect(g.snap(edge.id, 10).snapped).toBe(false);
+    expect(edge.locked).toBe(false);
+
+    // Joining a locked group locks the result without moving the frame.
+    const next = g.placeFromTray(2, 200 + 4, 3);
+    const { gid } = g.snap(next.id, 10);
+    expect(g.groups.get(gid)!.locked).toBe(true);
+    expect(g.piecePos(3)).toEqual({ x: 300, y: 0 });
+    expect(g.piecePos(1)).toEqual({ x: 100, y: 0 });
+    expect(g.zOrder[0]).toBe(gid);
+  });
+
+  it('does not lock a corner far from its spot', () => {
+    const g = make();
+    const corner = g.placeFromTray(0, 40, 40);
+    expect(g.snap(corner.id, 10).snapped).toBe(false);
+    expect(corner.locked).toBe(false);
+  });
+
   it('detects completion and round-trips saves', () => {
     const g = make();
     for (const pid of g.trayOrder) {
@@ -133,5 +166,13 @@ describe('Game', () => {
     expect(restored.trayOrder).toEqual(h.trayOrder);
     expect(restored.piecePos(3)).toEqual({ x: 10, y: 20 });
     expect(restored.trayPieces('all')).toHaveLength(11);
+
+    const k = make();
+    const c = k.placeFromTray(0, 2, 2);
+    k.snap(c.id, 5);
+    const back = Game.fromSave(
+      JSON.parse(JSON.stringify(k.toSave({ credit: '', filter: 'all', elapsedMs: 0 }))),
+    );
+    expect(back.groups.get(c.id)!.locked).toBe(true);
   });
 });
