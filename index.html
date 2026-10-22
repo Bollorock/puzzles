@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#16181d" />
+    <meta
+      name="description"
+      content="Jigsaw puzzles for your phone. Free photos or your own pictures."
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <title>Puzzles</title>
+  </head>
+  <body>
+    <section id="home" class="screen">
+      <header class="home-head">
+        <img src="./icon.svg" alt="" width="36" height="36" />
+        <h1>Puzzles</h1>
+      </header>
+
+      <div id="continue" class="card continue" hidden>
+        <img id="continue-img" alt="" />
+        <div class="continue-text">
+          <strong>Continue puzzle</strong>
+          <span id="continue-info"></span>
+        </div>
+        <button id="btn-continue" class="btn primary">Resume</button>
+      </div>
+
+      <h2>Pick an image</h2>
+      <div class="sources">
+        <label class="btn">
+          <input id="file" type="file" accept="image/*" hidden />
+          Use your photo
+        </label>
+        <button id="btn-shuffle" class="btn">Shuffle photos</button>
+      </div>
+      <div id="gallery" class="gallery"></div>
+      <button id="btn-more" class="btn wide">Load more</button>
+      <p class="credit-note">
+        Free photos from
+        <a href="https://picsum.photos" target="_blank" rel="noopener">Lorem Picsum</a> / Unsplash.
+      </p>
+
+      <div id="start-panel" class="start-panel">
+        <div class="start-row">
+          <div id="selected" class="selected empty"><span>No image</span></div>
+          <div class="counts-wrap">
+            <div class="label">Pieces <span id="grid-info"></span></div>
+            <div id="counts" class="counts"></div>
+          </div>
+        </div>
+        <button id="btn-start" class="btn primary wide" disabled>Start puzzle</button>
+      </div>
+    </section>
+
+    <section id="play" class="screen" hidden>
+      <canvas id="board"></canvas>
+      <canvas id="drag-layer"></canvas>
+      <header id="topbar" class="topbar">
+        <button id="btn-home" class="icon-btn" aria-label="Back to images">
+          <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
+        </button>
+        <div id="progress" class="progress"></div>
+        <button id="btn-fit" class="icon-btn" aria-label="Fit to screen">
+          <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+        </button>
+        <button id="btn-gather" class="btn small" aria-label="Move single pieces to storage">
+          <svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
+          Store singles
+        </button>
+      </header>
+      <footer id="tray" class="tray">
+        <div class="tray-head">
+          <div class="seg" role="tablist" aria-label="Storage filter">
+            <button data-filter="all" class="on" role="tab">All</button>
+            <button data-filter="edge" role="tab">Edges</button>
+            <button data-filter="inner" role="tab">Non-edges</button>
+          </div>
+          <span id="tray-count" class="tray-count"></span>
+        </div>
+        <div id="tray-scroll" class="tray-scroll">
+          <div id="tray-items" class="tray-items"></div>
+        </div>
+      </footer>
+    </section>
+
+    <div id="done" class="overlay" hidden>
+      <div class="card done-card">
+        <h2>Solved!</h2>
+        <p id="done-info"></p>
+        <p id="done-credit" class="muted"></p>
+        <button id="btn-done-home" class="btn primary wide">New puzzle</button>
+        <button id="btn-done-close" class="btn wide">Admire it</button>
+      </div>
+    </div>
+    <div id="loading" class="overlay" hidden><div class="spinner"></div></div>
+    <div id="toast" class="toast" hidden></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
