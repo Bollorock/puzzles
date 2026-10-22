@@ -1,8 +1,10 @@
 import './style.css';
 import { Board } from './board';
+import { previewSound, snapFeedback, unlockAudio, winFeedback } from './feedback';
 import { Game, type SavedGame, type TrayFilter } from './game';
 import { gridFor, PIECE_COUNTS } from './geometry';
 import { fetchBlob, fullUrl, listPhotos, prepareImage, thumbUrl, type PicsumPhoto } from './images';
+import { lsGet, lsSet, setSetting, settings, type Settings } from './prefs';
 import { renderPieces, renderScaleFor } from './render';
 import { clearSaved, loadSaved, saveImage, saveState } from './storage';
 import { Tray } from './tray';
@@ -16,21 +18,6 @@ type Selection =
 let selection: Selection | null = null;
 let pieceCount = Number(lsGet('pieces')) || 48;
 let galleryPage = 1;
-
-function lsGet(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-function lsSet(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Storage may be unavailable (private mode); the preference just isn't kept.
-  }
-}
 
 // ---- small UI helpers ---------------------------------------------------
 
@@ -224,7 +211,7 @@ function updateProgress(s: Session) {
   const total = s.game.pieces.length;
   let joined = 0;
   for (const g of s.game.groups.values()) if (g.pieces.length > 1) joined += g.pieces.length;
-  $('progress').textContent = `${joined} / ${total} joined`;
+  $('progress').textContent = `${joined} / ${total}`;
 }
 
 function setFilterButtons(f: TrayFilter) {
@@ -270,7 +257,7 @@ function startSession(game: Game, image: ImageBitmap, credit: string, saved?: Sa
         scheduleSave();
         if (kind !== 'camera' && game.isComplete) finish(s);
       },
-      snapped: () => navigator.vibrate?.(12),
+      snapped: snapFeedback,
     },
   );
   s.tray = new Tray($('tray-scroll'), $('tray-items'), $('tray-count'), game, sprites, {
@@ -308,6 +295,7 @@ function finish(s: Session) {
   void clearSaved().catch(() => {});
   $('done-info').textContent = `${s.game.pieces.length} pieces in ${formatTime(s.elapsedBase)}`;
   $('done-credit').textContent = s.credit;
+  winFeedback();
   setTimeout(() => {
     $('done').hidden = false;
     s.board.fit();
@@ -400,6 +388,31 @@ function init() {
       scheduleSave();
     });
   }
+
+  // Settings sheet, reachable from the home screen and the game.
+  const settingsSheet = $('settings');
+  for (const key of ['sound', 'vibration'] as (keyof Settings)[]) {
+    const input = $<HTMLInputElement>(`set-${key}`);
+    input.checked = settings[key];
+    input.addEventListener('change', () => {
+      setSetting(key, input.checked);
+      if (key === 'sound' && input.checked) {
+        previewSound();
+      } else if (key === 'vibration' && input.checked) {
+        navigator.vibrate?.(15);
+      }
+    });
+  }
+  if (!('vibrate' in navigator)) $('vibration-note').hidden = false;
+  for (const id of ['btn-settings', 'btn-settings-play']) {
+    $(id).addEventListener('click', () => (settingsSheet.hidden = false));
+  }
+  $('btn-settings-close').addEventListener('click', () => (settingsSheet.hidden = true));
+  settingsSheet.addEventListener('click', (e) => {
+    if (e.target === settingsSheet) settingsSheet.hidden = true;
+  });
+  // Audio can only start after a user gesture.
+  window.addEventListener('pointerdown', unlockAudio, { capture: true });
 
   document.addEventListener('visibilitychange', () => {
     const s = session;

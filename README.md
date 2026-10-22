@@ -12,6 +12,8 @@ A jigsaw puzzle web app made for phones. It is an installable PWA and works offl
   - Drop a single piece back onto the storage box to put it away.
   - Filter the box: **All**, **Edges** or **Non-edges**.
 - **Store singles** moves every piece that isn't joined to another back into storage.
+- Snapping plays a soft click and a short vibration, and finishing a puzzle plays a little chime.
+  Both can be turned off in **Settings** (the sliders button). Vibration needs a device that supports it; iPhones do not.
 - Progress saves automatically, so you can resume after closing the app.
 
 ## Development

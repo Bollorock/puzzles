@@ -23,6 +23,13 @@
       <header class="home-head">
         <img src="./icon.svg" alt="" width="36" height="36" />
         <h1>Puzzles</h1>
+        <button id="btn-settings" class="icon-btn push" aria-label="Settings">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+            <circle cx="16" cy="7" r="2" />
+            <circle cx="10" cy="17" r="2" />
+          </svg>
+        </button>
       </header>
 
       <div id="continue" class="card continue" hidden>
@@ -72,6 +79,13 @@
         <button id="btn-fit" class="icon-btn" aria-label="Fit to screen">
           <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
         </button>
+        <button id="btn-settings-play" class="icon-btn" aria-label="Settings">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+            <circle cx="16" cy="7" r="2" />
+            <circle cx="10" cy="17" r="2" />
+          </svg>
+        </button>
         <button id="btn-gather" class="btn small" aria-label="Move single pieces to storage">
           <svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
           Store singles
@@ -99,6 +113,23 @@
         <p id="done-credit" class="muted"></p>
         <button id="btn-done-home" class="btn primary wide">New puzzle</button>
         <button id="btn-done-close" class="btn wide">Admire it</button>
+      </div>
+    </div>
+    <div id="settings" class="overlay" hidden>
+      <div class="card settings-card" role="dialog" aria-labelledby="settings-title">
+        <h2 id="settings-title">Settings</h2>
+        <label class="toggle">
+          <span>Sound when pieces snap</span>
+          <input id="set-sound" type="checkbox" role="switch" />
+        </label>
+        <label class="toggle">
+          <span>
+            Vibration when pieces snap
+            <small id="vibration-note" class="muted" hidden>Not supported on this device</small>
+          </span>
+          <input id="set-vibration" type="checkbox" role="switch" />
+        </label>
+        <button id="btn-settings-close" class="btn primary wide">Done</button>
       </div>
     </div>
     <div id="loading" class="overlay" hidden><div class="spinner"></div></div>
