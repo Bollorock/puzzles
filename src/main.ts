@@ -210,7 +210,9 @@ function saveNow() {
 function updateProgress(s: Session) {
   const total = s.game.pieces.length;
   let joined = 0;
-  for (const g of s.game.groups.values()) if (g.pieces.length > 1) joined += g.pieces.length;
+  for (const g of s.game.groups.values()) {
+    if (g.pieces.length > 1 || g.locked) joined += g.pieces.length;
+  }
   $('progress').textContent = `${joined} / ${total}`;
 }
 
