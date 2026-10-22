@@ -28,7 +28,7 @@ npx vp build    # production build in dist/
 
 ## Hosting on GitHub Pages
 
-`.github/workflows/deploy.yml` builds and deploys every push to `main`.
+`.github/workflows/deploy.yml` builds and deploys every push to `master`.
 It needs a one-time setup: in the repository go to **Settings → Pages → Build and deployment → Source**
 and choose **GitHub Actions**. The site is then published at `https://<user>.github.io/<repo>/`.
 All asset paths are relative, so the build works from any sub-path.
