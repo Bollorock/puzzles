@@ -19,6 +19,8 @@ export interface BoardHooks {
   /** Something changed that should be saved / reflected in the UI. */
   changed(kind: 'move' | 'tray' | 'camera'): void;
   snapped(): void;
+  /** False locks the camera to the fitted view: no panning or zooming. */
+  panZoom(): boolean;
 }
 
 type Mode =
@@ -141,7 +143,8 @@ export class Board {
     const r = this.canvas.getBoundingClientRect();
     this.offsets.left = r.left;
     this.offsets.top = r.top;
-    this.requestDraw();
+    if (this.hooks.panZoom()) this.requestDraw();
+    else this.fit();
   }
 
   // ---- tray interaction -------------------------------------------------
@@ -187,7 +190,7 @@ export class Board {
     let fallback: number | null = null;
     for (let i = this.game.zOrder.length - 1; i >= 0; i--) {
       const g = this.game.groups.get(this.game.zOrder[i])!;
-      // Locked pieces can't be picked up; touching them pans instead.
+      // Locked pieces can't be picked up; touching them pans instead (if allowed).
       if (g.locked) continue;
       for (const pid of g.pieces) {
         const p = this.game.piecePos(pid);
@@ -226,7 +229,7 @@ export class Board {
           offY: b.y - g.y,
           fromTray: false,
         };
-      } else {
+      } else if (this.hooks.panZoom()) {
         this.mode = { kind: 'pan', id: e.pointerId, lastX: e.clientX, lastY: e.clientY };
       }
       this.requestDraw();
@@ -308,6 +311,7 @@ export class Board {
 
   private onWheel(e: WheelEvent) {
     e.preventDefault();
+    if (!this.hooks.panZoom()) return;
     const sx = e.clientX - this.offsets.left;
     const sy = e.clientY - this.offsets.top;
     if (e.ctrlKey || !e.deltaX) {

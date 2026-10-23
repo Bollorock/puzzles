@@ -20,11 +20,13 @@ export function lsSet(key: string, value: string) {
 export interface Settings {
   sound: boolean;
   vibration: boolean;
+  panZoom: boolean;
 }
 
 export const settings: Settings = {
   sound: lsGet('sound') !== 'off',
   vibration: lsGet('vibration') !== 'off',
+  panZoom: lsGet('panZoom') !== 'off',
 };
 
 export function setSetting(key: keyof Settings, on: boolean) {
