@@ -1,7 +1,14 @@
 // Game state without any DOM: piece groups on the board, the storage tray,
 // snapping and serialization.
 
-import { generatePieces, makeLayout, mulberry32, type Layout, type PieceShape } from './geometry';
+import {
+  generatePieces,
+  makeLayout,
+  mulberry32,
+  type Layout,
+  type PieceShape,
+  type ShapeStyle,
+} from './geometry';
 
 export type TrayFilter = 'all' | 'edge' | 'inner';
 
@@ -22,6 +29,8 @@ export interface SavedGame {
   rows: number;
   width: number;
   height: number;
+  /** Missing in saves from before unusual shapes existed. */
+  style?: ShapeStyle;
   credit: string;
   trayOrder: number[];
   /** Group id for each piece, or -1 when the piece is in the tray. */
@@ -51,10 +60,11 @@ export class Game {
     height: number,
     cols: number,
     rows: number,
+    readonly style: ShapeStyle = 'classic',
     trayOrder?: number[],
   ) {
-    this.layout = makeLayout(width, height, cols, rows);
-    this.pieces = generatePieces(this.layout, seed);
+    this.layout = makeLayout(width, height, cols, rows, style);
+    this.pieces = generatePieces(this.layout, seed, style);
     this.pieceGroup = this.pieces.map(() => -1);
     this.trayOrder =
       trayOrder ??
@@ -65,7 +75,15 @@ export class Game {
   }
 
   static fromSave(s: SavedGame): Game {
-    const g = new Game(s.seed, s.width, s.height, s.cols, s.rows, s.trayOrder);
+    const g = new Game(
+      s.seed,
+      s.width,
+      s.height,
+      s.cols,
+      s.rows,
+      s.style ?? 'classic',
+      s.trayOrder,
+    );
     for (const sg of s.groups) {
       g.groups.set(sg.id, { id: sg.id, x: sg.x, y: sg.y, pieces: [], locked: !!sg.locked });
       g.zOrder.push(sg.id);
@@ -92,6 +110,7 @@ export class Game {
       rows,
       width,
       height,
+      style: this.style,
       trayOrder: this.trayOrder,
       pieceGroup: [...this.pieceGroup],
       groups: this.zOrder.map((id) => {

@@ -13,7 +13,8 @@ export interface PieceSprite {
 
 export function piecePath(shape: PieceShape): Path2D {
   const p = new Path2D();
-  p.moveTo(0, 0);
+  const start = shape.outline[shape.outline.length - 1].to;
+  p.moveTo(start.x, start.y);
   for (const s of shape.outline) {
     if (s.kind === 'line') p.lineTo(s.to.x, s.to.y);
     else p.bezierCurveTo(s.c1.x, s.c1.y, s.c2.x, s.c2.y, s.to.x, s.to.y);
