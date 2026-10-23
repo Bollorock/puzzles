@@ -21,7 +21,14 @@ export interface BoardHooks {
   snapped(): void;
   /** False locks the camera to the fitted view: no panning or zooming. */
   panZoom(): boolean;
+  /** Screen offset (px) of a dragged piece from the finger, or null for none. */
+  dragOffset(): { x: number; y: number } | null;
 }
+
+/** Finger travel (px) over which a piece picked up on the board eases into its offset. */
+const LIFT_RAMP = 48;
+/** Default lift for pieces pulled out of the tray, which start under the finger. */
+const TRAY_LIFT = { x: 0, y: -28 };
 
 type Mode =
   | { kind: 'idle' }
@@ -35,7 +42,22 @@ type Mode =
       dist: number;
       zoom: number;
     }
-  | { kind: 'drag'; id: number; gid: number; offX: number; offY: number; fromTray: boolean };
+  | {
+      kind: 'drag';
+      id: number;
+      gid: number;
+      offX: number;
+      offY: number;
+      fromTray: boolean;
+      /** Where the drag started, to ease the lift in as the finger moves. */
+      startX: number;
+      startY: number;
+      /** Screen offset of the piece from the finger once fully lifted. */
+      liftX: number;
+      liftY: number;
+      /** How much of the lift is applied so far, 0..1; never goes back down. */
+      ramp: number;
+    };
 
 export class Board {
   camera: Camera = { x: 0, y: 0, zoom: 1 };
@@ -165,17 +187,27 @@ export class Board {
     if (this.mode.kind !== 'idle') return;
     const { pieceW, pieceH } = this.game.layout;
     const b = this.toBoard(e.clientX, e.clientY);
-    // Keep the piece a little above the finger so it stays visible.
-    const lift = 28 / this.camera.zoom;
-    const g = this.game.placeFromTray(pid, b.x - pieceW / 2, b.y - pieceH / 2 - lift);
+    // Keep the piece away from the finger so it stays visible.
+    const lift = this.hooks.dragOffset() ?? TRAY_LIFT;
+    const z = this.camera.zoom;
+    const g = this.game.placeFromTray(
+      pid,
+      b.x - pieceW / 2 + lift.x / z,
+      b.y - pieceH / 2 + lift.y / z,
+    );
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     this.mode = {
       kind: 'drag',
       id: e.pointerId,
       gid: g.id,
-      offX: b.x - g.x,
-      offY: b.y - g.y,
+      offX: pieceW / 2,
+      offY: pieceH / 2,
       fromTray: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      liftX: lift.x,
+      liftY: lift.y,
+      ramp: 1,
     };
     this.hooks.changed('tray');
     this.requestDraw();
@@ -220,6 +252,7 @@ export class Board {
       if (gid !== null) {
         const g = this.game.groups.get(gid)!;
         const b = this.toBoard(e.clientX, e.clientY);
+        const lift = this.hooks.dragOffset() ?? { x: 0, y: 0 };
         this.game.bringToFront(gid);
         this.mode = {
           kind: 'drag',
@@ -228,6 +261,11 @@ export class Board {
           offX: b.x - g.x,
           offY: b.y - g.y,
           fromTray: false,
+          startX: e.clientX,
+          startY: e.clientY,
+          liftX: lift.x,
+          liftY: lift.y,
+          ramp: 0,
         };
       } else if (this.hooks.panZoom()) {
         this.mode = { kind: 'pan', id: e.pointerId, lastX: e.clientX, lastY: e.clientY };
@@ -273,8 +311,17 @@ export class Board {
       this.setZoomAround((m.zoom * dist) / m.dist, sx, sy, m.anchorX, m.anchorY);
       this.requestDraw();
     } else if (m.kind === 'drag' && m.id === e.pointerId) {
+      // Ease the lift in with the first bit of movement, so the piece doesn't
+      // jump on touch and a tap leaves it where it was.
+      const travel = Math.hypot(e.clientX - m.startX, e.clientY - m.startY);
+      m.ramp = Math.max(m.ramp, Math.min(1, travel / LIFT_RAMP));
       const b = this.toBoard(e.clientX, e.clientY);
-      this.game.moveGroup(m.gid, b.x - m.offX, b.y - m.offY);
+      const z = this.camera.zoom;
+      this.game.moveGroup(
+        m.gid,
+        b.x - m.offX + (m.liftX * m.ramp) / z,
+        b.y - m.offY + (m.liftY * m.ramp) / z,
+      );
       this.requestDraw(true);
     }
   }

@@ -11,6 +11,9 @@ A jigsaw puzzle web app made for phones. It is an installable PWA and works offl
 - Pan by dragging the background. Zoom by pinching, or with the mouse wheel on desktop.
   Turn off **Pan and zoom the board** in **Settings** to keep the whole puzzle fitted to the screen
   instead; the fit button still refits it after you move pieces outside the frame.
+- **Lift dragged pieces off your finger** in **Settings** shows the piece you drag beside your
+  finger instead of under it: up-left, straight up or up-right, **Near** or **Far**. A piece picked
+  up on the board slides into place over the first bit of movement, so a tap doesn't move it.
 - The storage box at the bottom holds pieces in a random order. Swipe it sideways to scroll.
   - Drag a piece **upwards** to pull it onto the board, or tap it to drop it in the middle of the view.
   - Drop a single piece back onto the storage box to put it away.

@@ -495,6 +495,32 @@ h2 {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+.setting {
+  display: grid;
+  gap: 8px;
+  padding: 6px 0 4px;
+}
+.setting small {
+  display: block;
+}
+.setting .seg button {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 36px;
+}
+.setting .seg svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.seg.disabled {
+  opacity: 0.5;
+}
 .push {
   margin-left: auto;
 }

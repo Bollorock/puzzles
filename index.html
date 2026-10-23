@@ -136,6 +136,28 @@
           </span>
           <input id="set-panZoom" type="checkbox" role="switch" />
         </label>
+        <div class="setting">
+          <span id="offset-label">
+            Lift dragged pieces off your finger
+            <small class="muted">Shows the piece beside your finger so it stays visible</small>
+          </span>
+          <div id="set-offsetDir" class="seg" role="radiogroup" aria-labelledby="offset-label">
+            <button data-value="off" role="radio">Off</button>
+            <button data-value="upLeft" role="radio" aria-label="Up and left">
+              <svg viewBox="0 0 24 24"><path d="M17 17L7 7M7 15V7h8" /></svg>
+            </button>
+            <button data-value="up" role="radio" aria-label="Up">
+              <svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+            </button>
+            <button data-value="upRight" role="radio" aria-label="Up and right">
+              <svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" /></svg>
+            </button>
+          </div>
+          <div id="set-offsetDist" class="seg" role="radiogroup" aria-label="Lift distance">
+            <button data-value="near" role="radio">Near</button>
+            <button data-value="far" role="radio">Far</button>
+          </div>
+        </div>
         <button id="btn-settings-close" class="btn primary wide">Done</button>
       </div>
     </div>

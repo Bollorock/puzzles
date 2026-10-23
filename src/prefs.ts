@@ -33,3 +33,35 @@ export function setSetting(key: keyof Settings, on: boolean) {
   settings[key] = on;
   lsSet(key, on ? 'on' : 'off');
 }
+
+/** Where a dragged piece is shown relative to the finger, so the finger doesn't cover it. */
+export type OffsetDir = 'off' | 'upLeft' | 'up' | 'upRight';
+export type OffsetDist = 'near' | 'far';
+
+const OFFSET_DIRS: OffsetDir[] = ['off', 'upLeft', 'up', 'upRight'];
+const OFFSET_DISTS: OffsetDist[] = ['near', 'far'];
+
+function pick<T extends string>(value: string | null, options: T[], fallback: T): T {
+  return options.includes(value as T) ? (value as T) : fallback;
+}
+
+export const dragOffset = {
+  dir: pick(lsGet('offsetDir'), OFFSET_DIRS, 'off'),
+  dist: pick(lsGet('offsetDist'), OFFSET_DISTS, 'near'),
+};
+
+export function setDragOffset(dir: OffsetDir, dist: OffsetDist) {
+  dragOffset.dir = dir;
+  dragOffset.dist = dist;
+  lsSet('offsetDir', dir);
+  lsSet('offsetDist', dist);
+}
+
+/** The offset in screen pixels, or null when it is turned off. */
+export function offsetVector(dir: OffsetDir, dist: OffsetDist): { x: number; y: number } | null {
+  if (dir === 'off') return null;
+  const len = dist === 'far' ? 110 : 60;
+  if (dir === 'up') return { x: 0, y: -len };
+  const d = len * Math.SQRT1_2;
+  return { x: dir === 'upLeft' ? -d : d, y: -d };
+}
