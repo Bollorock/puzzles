@@ -375,9 +375,9 @@ h2 {
 .tray-scroll {
   overflow-x: auto;
   overflow-y: hidden;
-  touch-action: pan-x;
+  /* Swipes are handled in tray.ts so scrolling needs a clear sideways move. */
+  touch-action: none;
   scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
 }
 .tray-items {
   display: grid;
