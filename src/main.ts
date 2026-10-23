@@ -4,7 +4,18 @@ import { previewSound, snapFeedback, unlockAudio, winFeedback } from './feedback
 import { Game, type SavedGame, type TrayFilter } from './game';
 import { gridFor, PIECE_COUNTS } from './geometry';
 import { fetchBlob, fullUrl, listPhotos, prepareImage, thumbUrl, type PicsumPhoto } from './images';
-import { lsGet, lsSet, setSetting, settings, type Settings } from './prefs';
+import {
+  dragOffset,
+  lsGet,
+  lsSet,
+  offsetVector,
+  setDragOffset,
+  setSetting,
+  settings,
+  type OffsetDir,
+  type OffsetDist,
+  type Settings,
+} from './prefs';
 import { renderPieces, renderScaleFor } from './render';
 import { clearSaved, loadSaved, saveImage, saveState } from './storage';
 import { Tray } from './tray';
@@ -261,6 +272,7 @@ function startSession(game: Game, image: ImageBitmap, credit: string, saved?: Sa
       },
       snapped: snapFeedback,
       panZoom: () => settings.panZoom,
+      dragOffset: () => offsetVector(dragOffset.dir, dragOffset.dist),
     },
   );
   s.tray = new Tray($('tray-scroll'), $('tray-items'), $('tray-count'), game, sprites, {
@@ -408,6 +420,35 @@ function init() {
       }
     });
   }
+  const offsetDir = $('set-offsetDir');
+  const offsetDist = $('set-offsetDist');
+  const showOffset = () => {
+    for (const [group, value] of [
+      [offsetDir, dragOffset.dir],
+      [offsetDist, dragOffset.dist],
+    ] as const) {
+      for (const b of group.querySelectorAll<HTMLElement>('button')) {
+        const on = b.dataset.value === value;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-checked', String(on));
+      }
+    }
+    offsetDist.classList.toggle('disabled', dragOffset.dir === 'off');
+  };
+  offsetDir.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('button');
+    if (b) setDragOffset(b.dataset.value as OffsetDir, dragOffset.dist);
+    showOffset();
+  });
+  offsetDist.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('button');
+    if (!b) return;
+    // Picking a distance while off turns the lift on, pointing up.
+    const dir = dragOffset.dir === 'off' ? 'up' : dragOffset.dir;
+    setDragOffset(dir, b.dataset.value as OffsetDist);
+    showOffset();
+  });
+  showOffset();
   if (!('vibrate' in navigator)) $('vibration-note').hidden = false;
   for (const id of ['btn-settings', 'btn-settings-play']) {
     $(id).addEventListener('click', () => (settingsSheet.hidden = false));
