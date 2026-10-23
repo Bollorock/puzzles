@@ -200,8 +200,10 @@ export class Board {
       kind: 'drag',
       id: e.pointerId,
       gid: g.id,
-      offX: pieceW / 2,
-      offY: pieceH / 2,
+      // The group's origin is the puzzle's top-left, not this piece's, and
+      // dragging adds the lift back on, so take it out of the grab point.
+      offX: b.x - g.x + lift.x / z,
+      offY: b.y - g.y + lift.y / z,
       fromTray: true,
       startX: e.clientX,
       startY: e.clientY,
