@@ -63,6 +63,76 @@ describe('generatePieces', () => {
   });
 });
 
+describe('generatePieces (unusual)', () => {
+  for (const [w, h, cols, rows] of [
+    [1200, 800, 6, 4],
+    [900, 1300, 5, 8],
+    [1000, 1000, 12, 12],
+  ]) {
+    const layout = makeLayout(w, h, cols, rows, 'unusual');
+    const pieces = generatePieces(layout, 1234, 'unusual');
+    const opposite = { in: 'out', out: 'in', flat: 'flat' } as const;
+    const at = (c: number, r: number) => pieces[r * cols + c];
+
+    it(`keeps a straight border and matching neighbours (${cols}×${rows})`, () => {
+      for (const p of pieces) {
+        expect(p.sides[0] === 'flat').toBe(p.row === 0);
+        expect(p.sides[2] === 'flat').toBe(p.row === rows - 1);
+        expect(p.sides[3] === 'flat').toBe(p.col === 0);
+        expect(p.sides[1] === 'flat').toBe(p.col === cols - 1);
+        if (p.col < cols - 1) expect(at(p.col + 1, p.row).sides[3]).toBe(opposite[p.sides[1]]);
+        if (p.row < rows - 1) expect(at(p.col, p.row + 1).sides[0]).toBe(opposite[p.sides[2]]);
+        // Border corners stay on the frame.
+        const ends = p.outline.map((s) => s.to);
+        if (p.row === 0) expect(ends.some((q) => q.y === 0)).toBe(true);
+        if (p.col === 0) expect(ends.some((q) => q.x === 0)).toBe(true);
+      }
+    });
+
+    it(`fits every piece inside its padding (${cols}×${rows})`, () => {
+      for (const p of pieces) {
+        for (const s of p.outline) {
+          const pts = s.kind === 'line' ? [s.to] : [s.c1, s.c2, s.to];
+          for (const q of pts) {
+            expect(q.x).toBeGreaterThanOrEqual(-layout.pad);
+            expect(q.x).toBeLessThanOrEqual(layout.pieceW + layout.pad);
+            expect(q.y).toBeGreaterThanOrEqual(-layout.pad);
+            expect(q.y).toBeLessThanOrEqual(layout.pieceH + layout.pad);
+          }
+        }
+      }
+    });
+  }
+
+  it('shares each inner edge exactly between neighbours', () => {
+    const layout = makeLayout(1200, 800, 6, 4, 'unusual');
+    const pieces = generatePieces(layout, 99, 'unusual');
+    const a = pieces[0];
+    const b = pieces[1];
+    // a's right edge runs top→bottom; b's left edge runs bottom→top.
+    const abs = (p: typeof a, q: { x: number; y: number }) => ({
+      x: q.x + p.col * layout.pieceW,
+      y: q.y + p.row * layout.pieceH,
+    });
+    const right = a.outline.slice(1).filter((s) => s.kind === 'bezier');
+    const left = b.outline.filter((s) => s.kind === 'bezier');
+    const aEnd = abs(a, right[right.length / 2 - 1].to);
+    expect(right.length).toBeGreaterThan(0);
+    expect(
+      left.some((s) => {
+        const q = abs(b, s.to);
+        return Math.abs(q.x - aEnd.x) < 1e-6 && Math.abs(q.y - aEnd.y) < 1e-6;
+      }),
+    ).toBe(true);
+  });
+
+  it('is deterministic and differs from the classic cut', () => {
+    const layout = makeLayout(1200, 800, 6, 4, 'unusual');
+    expect(generatePieces(layout, 5, 'unusual')).toEqual(generatePieces(layout, 5, 'unusual'));
+    expect(generatePieces(layout, 5, 'unusual')).not.toEqual(generatePieces(layout, 5));
+  });
+});
+
 describe('Game', () => {
   const make = () => new Game(7, 400, 300, 4, 3);
 
@@ -174,5 +244,15 @@ describe('Game', () => {
       JSON.parse(JSON.stringify(k.toSave({ credit: '', filter: 'all', elapsedMs: 0 }))),
     );
     expect(back.groups.get(c.id)!.locked).toBe(true);
+  });
+
+  it('keeps the shape style across saves, defaulting to classic', () => {
+    const g = new Game(7, 400, 300, 4, 3, 'unusual');
+    const save = g.toSave({ credit: '', filter: 'all', elapsedMs: 0 });
+    const back = Game.fromSave(JSON.parse(JSON.stringify(save)));
+    expect(back.style).toBe('unusual');
+    expect(back.pieces).toEqual(g.pieces);
+    const { style: _, ...old } = save;
+    expect(Game.fromSave(old).style).toBe('classic');
   });
 });

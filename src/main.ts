@@ -2,7 +2,7 @@ import './style.css';
 import { Board } from './board';
 import { previewSound, snapFeedback, unlockAudio, winFeedback } from './feedback';
 import { Game, type SavedGame, type TrayFilter } from './game';
-import { gridFor, PIECE_COUNTS } from './geometry';
+import { gridFor, PIECE_COUNTS, type ShapeStyle } from './geometry';
 import { fetchBlob, fullUrl, listPhotos, prepareImage, thumbUrl, type PicsumPhoto } from './images';
 import {
   dragOffset,
@@ -28,6 +28,7 @@ type Selection =
 
 let selection: Selection | null = null;
 let pieceCount = Number(lsGet('pieces')) || 48;
+let shapeStyle: ShapeStyle = lsGet('shapes') === 'unusual' ? 'unusual' : 'classic';
 let galleryPage = 1;
 
 // ---- small UI helpers ---------------------------------------------------
@@ -87,6 +88,11 @@ function updateStartPanel() {
   $<HTMLButtonElement>('btn-start').disabled = !selection;
   for (const b of $('counts').querySelectorAll('button')) {
     b.classList.toggle('on', Number(b.dataset.n) === pieceCount);
+  }
+  for (const b of $('shapes').querySelectorAll<HTMLElement>('button')) {
+    const on = b.dataset.value === shapeStyle;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', String(on));
   }
 }
 
@@ -172,8 +178,9 @@ async function refreshContinue() {
   const { state } = saved;
   const total = state.cols * state.rows;
   const placed = state.pieceGroup.filter((g) => g !== -1).length;
+  const unusual = state.style === 'unusual' ? ' unusual' : '';
   $('continue-info').textContent =
-    `${total} pieces · ${placed} on board · ${formatTime(state.elapsedMs)}`;
+    `${total}${unusual} pieces · ${placed} on board · ${formatTime(state.elapsedMs)}`;
 }
 
 // ---- play session -------------------------------------------------------
@@ -326,7 +333,7 @@ async function startNew() {
     const { blob, bitmap } = await prepareImage(source);
     const { cols, rows } = gridFor(pieceCount, bitmap.width / bitmap.height);
     const seed = (Math.random() * 2 ** 32) >>> 0;
-    const game = new Game(seed, bitmap.width, bitmap.height, cols, rows);
+    const game = new Game(seed, bitmap.width, bitmap.height, cols, rows, shapeStyle);
     const credit = sel.kind === 'picsum' ? `Photo by ${sel.photo.author} on Unsplash` : '';
     await saveImage(blob).catch(() => {});
     startSession(game, bitmap, credit);
@@ -376,6 +383,13 @@ function init() {
     const f = input.files?.[0];
     if (f) void onFile(f);
     input.value = '';
+  });
+  $('shapes').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('button');
+    if (!b) return;
+    shapeStyle = b.dataset.value as ShapeStyle;
+    lsSet('shapes', shapeStyle);
+    updateStartPanel();
   });
   $('btn-start').addEventListener('click', () => void startNew());
   $('btn-continue').addEventListener('click', () => void resume());

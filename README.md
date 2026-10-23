@@ -5,6 +5,9 @@ A jigsaw puzzle web app made for phones. It is an installable PWA and works offl
 - Pick a free photo from [Lorem Picsum](https://picsum.photos) (Unsplash), or use one of your own.
 - Choose 12, 24, 48, 96, 150, 300 or 500 pieces. The grid adapts to the image's shape.
 - Each side of a piece is an inside peg, an outside peg, or a flat edge.
+- Pick **Classic** or **Unusual** shapes. Unusual pieces are cut on a wobbly grid, so they aren't
+  rectangles, and mix round knobs with keys, dovetails, arrows and double knobs. The puzzle's
+  outer border stays straight.
 - Pieces that belong together snap when you drop them close to each other.
 - Corner pieces snap into their corner of the dashed outline and lock there. Pieces joined to a
   locked piece lock too, so the finished frame can't be knocked out of place by accident.

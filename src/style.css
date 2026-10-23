@@ -264,6 +264,15 @@ h2 {
   font-weight: 600;
   cursor: pointer;
 }
+.shape-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.shape-row .label {
+  margin: 0;
+}
 .counts button.on {
   background: var(--accent);
   border-color: var(--accent);
