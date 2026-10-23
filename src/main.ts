@@ -260,6 +260,7 @@ function startSession(game: Game, image: ImageBitmap, credit: string, saved?: Sa
         if (kind !== 'camera' && game.isComplete) finish(s);
       },
       snapped: snapFeedback,
+      panZoom: () => settings.panZoom,
     },
   );
   s.tray = new Tray($('tray-scroll'), $('tray-items'), $('tray-count'), game, sprites, {
@@ -270,7 +271,7 @@ function startSession(game: Game, image: ImageBitmap, credit: string, saved?: Sa
     s.tray.setFilter(saved.filter);
   }
   setFilterButtons(s.tray.filter);
-  if (saved?.camera) {
+  if (saved?.camera && settings.panZoom) {
     s.board.camera = { ...saved.camera };
     s.board.requestDraw();
   } else {
@@ -393,7 +394,7 @@ function init() {
 
   // Settings sheet, reachable from the home screen and the game.
   const settingsSheet = $('settings');
-  for (const key of ['sound', 'vibration'] as (keyof Settings)[]) {
+  for (const key of ['sound', 'vibration', 'panZoom'] as (keyof Settings)[]) {
     const input = $<HTMLInputElement>(`set-${key}`);
     input.checked = settings[key];
     input.addEventListener('change', () => {
@@ -402,6 +403,8 @@ function init() {
         previewSound();
       } else if (key === 'vibration' && input.checked) {
         navigator.vibrate?.(15);
+      } else if (key === 'panZoom' && !input.checked) {
+        session?.board.fit();
       }
     });
   }

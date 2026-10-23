@@ -9,6 +9,8 @@ A jigsaw puzzle web app made for phones. It is an installable PWA and works offl
 - Corner pieces snap into their corner of the dashed outline and lock there. Pieces joined to a
   locked piece lock too, so the finished frame can't be knocked out of place by accident.
 - Pan by dragging the background. Zoom by pinching, or with the mouse wheel on desktop.
+  Turn off **Pan and zoom the board** in **Settings** to keep the whole puzzle fitted to the screen
+  instead; the fit button still refits it after you move pieces outside the frame.
 - The storage box at the bottom holds pieces in a random order. Swipe it sideways to scroll.
   - Drag a piece **upwards** to pull it onto the board, or tap it to drop it in the middle of the view.
   - Drop a single piece back onto the storage box to put it away.
