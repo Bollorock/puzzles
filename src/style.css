@@ -149,6 +149,35 @@ h2 {
   margin-bottom: 12px;
 }
 
+.chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 0 -16px 10px;
+  padding: 0 16px 2px;
+  scrollbar-width: none;
+}
+.chips::-webkit-scrollbar {
+  display: none;
+}
+.chips button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+.chips button.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
