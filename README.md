@@ -2,7 +2,11 @@
 
 A jigsaw puzzle web app made for phones. It is an installable PWA and works offline.
 
-- Pick a free photo from [Lorem Picsum](https://picsum.photos) (Unsplash), or use one of your own.
+- Pick a free photo, or use one of your own. The theme chips above the gallery switch between
+  general photos from [Lorem Picsum](https://picsum.photos) (Unsplash) and colourful
+  [Wikimedia Commons featured pictures](https://commons.wikimedia.org/wiki/Commons:Featured_pictures):
+  **Flowers**, **Landscapes**, **Sunsets**, **Animals**, **Space** and **Art**. The finish screen
+  credits the author and licence.
 - Choose 12, 24, 48, 96, 150, 300 or 500 pieces. The grid adapts to the image's shape.
 - Each side of a piece is an inside peg, an outside peg, or a flat edge.
 - Pick **Classic** or **Unusual** shapes. Unusual pieces are cut on a wobbly grid, so they aren't

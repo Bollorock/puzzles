@@ -1,6 +1,6 @@
 // Offline support: the app shell is cached on install, other same-origin
-// requests are served cache-first, and the Picsum photo list falls back to
-// the last cached copy when offline.
+// requests are served cache-first, and the Picsum and Wikimedia Commons photo
+// lists fall back to the last cached copy when offline.
 const VERSION = 'puzzles-v1';
 const SHELL = [
   './',
@@ -65,7 +65,10 @@ self.addEventListener('fetch', (event) => {
           }),
       ),
     );
-  } else if (url.hostname === 'picsum.photos' && url.pathname.startsWith('/v2/list')) {
+  } else if (
+    (url.hostname === 'picsum.photos' && url.pathname.startsWith('/v2/list')) ||
+    (url.hostname === 'commons.wikimedia.org' && url.pathname === '/w/api.php')
+  ) {
     event.respondWith(
       fetch(req)
         .then((res) => {

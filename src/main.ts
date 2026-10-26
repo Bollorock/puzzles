@@ -3,7 +3,15 @@ import { Board } from './board';
 import { previewSound, snapFeedback, unlockAudio, winFeedback } from './feedback';
 import { Game, type SavedGame, type TrayFilter } from './game';
 import { gridFor, PIECE_COUNTS, type ShapeStyle } from './geometry';
-import { fetchBlob, fullUrl, listPhotos, prepareImage, thumbUrl, type PicsumPhoto } from './images';
+import {
+  fetchBlob,
+  listCommons,
+  listPicsum,
+  prepareImage,
+  SOURCES,
+  type PhotoSource,
+  type RemotePhoto,
+} from './images';
 import {
   dragOffset,
   lsGet,
@@ -23,13 +31,16 @@ import { Tray } from './tray';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 type Selection =
-  | { kind: 'picsum'; photo: PicsumPhoto }
+  | { kind: 'remote'; photo: RemotePhoto }
   | { kind: 'file'; file: File; url: string; aspect: number };
 
 let selection: Selection | null = null;
 let pieceCount = Number(lsGet('pieces')) || 48;
 let shapeStyle: ShapeStyle = lsGet('shapes') === 'unusual' ? 'unusual' : 'classic';
+let source: PhotoSource = SOURCES.find((s) => s.id === lsGet('source')) ?? SOURCES[0];
 let galleryPage = 1;
+/** Photo ids already in the gallery; Commons returns a fresh random batch each time. */
+const galleryIds = new Set<string>();
 
 // ---- small UI helpers ---------------------------------------------------
 
@@ -61,7 +72,7 @@ function formatTime(ms: number) {
 
 function selectionAspect(): number | null {
   if (!selection) return null;
-  return selection.kind === 'picsum'
+  return selection.kind === 'remote'
     ? selection.photo.width / selection.photo.height
     : selection.aspect;
 }
@@ -73,7 +84,7 @@ function updateStartPanel() {
   if (selection) {
     const img = document.createElement('img');
     img.alt = '';
-    img.src = selection.kind === 'picsum' ? thumbUrl(selection.photo.id, 160) : selection.url;
+    img.src = selection.kind === 'remote' ? selection.photo.thumb : selection.url;
     sel.append(img);
   } else {
     sel.innerHTML = '<span>No image</span>';
@@ -113,7 +124,7 @@ function buildCounts() {
 
 function markGallerySelection() {
   for (const b of $('gallery').querySelectorAll<HTMLElement>('button')) {
-    b.classList.toggle('on', selection?.kind === 'picsum' && selection.photo.id === b.dataset.id);
+    b.classList.toggle('on', selection?.kind === 'remote' && selection.photo.id === b.dataset.id);
   }
 }
 
@@ -121,24 +132,30 @@ async function loadGallery(reset: boolean) {
   const more = $<HTMLButtonElement>('btn-more');
   more.disabled = true;
   try {
+    const src = source;
     if (reset) {
       // Picsum has ~1000 photos; start somewhere random for variety.
       galleryPage = 1 + Math.floor(Math.random() * 38);
+      galleryIds.clear();
       $('gallery').replaceChildren();
     }
-    const photos = await listPhotos(galleryPage++);
+    const photos = src.category ? await listCommons(src.category) : await listPicsum(galleryPage++);
+    // The user switched themes while this batch was loading.
+    if (src !== source) return;
     const frag = document.createDocumentFragment();
     for (const photo of photos) {
+      if (galleryIds.has(photo.id)) continue;
+      galleryIds.add(photo.id);
       const b = document.createElement('button');
       b.dataset.id = photo.id;
-      b.setAttribute('aria-label', `Photo by ${photo.author}`);
+      b.setAttribute('aria-label', photo.label);
       const img = document.createElement('img');
       img.loading = 'lazy';
       img.alt = '';
-      img.src = thumbUrl(photo.id);
+      img.src = photo.thumb;
       b.append(img);
       b.addEventListener('click', () => {
-        selection = { kind: 'picsum', photo };
+        selection = { kind: 'remote', photo };
         markGallerySelection();
         updateStartPanel();
       });
@@ -151,6 +168,35 @@ async function loadGallery(reset: boolean) {
   } finally {
     more.disabled = false;
   }
+}
+
+function buildSources() {
+  const wrap = $('themes');
+  for (const s of SOURCES) {
+    const b = document.createElement('button');
+    b.textContent = s.name;
+    b.dataset.id = s.id;
+    b.setAttribute('role', 'radio');
+    b.addEventListener('click', () => {
+      if (s === source) return;
+      source = s;
+      lsSet('source', s.id);
+      markSource();
+      void loadGallery(true);
+    });
+    wrap.append(b);
+  }
+  markSource();
+}
+
+function markSource() {
+  for (const b of $('themes').querySelectorAll<HTMLElement>('button')) {
+    const on = b.dataset.id === source.id;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', String(on));
+  }
+  $('credit-picsum').hidden = !!source.category;
+  $('credit-commons').hidden = !source.category;
 }
 
 async function onFile(file: File) {
@@ -329,12 +375,12 @@ async function startNew() {
   loading(true);
   try {
     const sel = selection;
-    const source = sel.kind === 'picsum' ? await fetchBlob(fullUrl(sel.photo)) : sel.file;
-    const { blob, bitmap } = await prepareImage(source);
+    const image = sel.kind === 'remote' ? await fetchBlob(sel.photo.full) : sel.file;
+    const { blob, bitmap } = await prepareImage(image);
     const { cols, rows } = gridFor(pieceCount, bitmap.width / bitmap.height);
     const seed = (Math.random() * 2 ** 32) >>> 0;
     const game = new Game(seed, bitmap.width, bitmap.height, cols, rows, shapeStyle);
-    const credit = sel.kind === 'picsum' ? `Photo by ${sel.photo.author} on Unsplash` : '';
+    const credit = sel.kind === 'remote' ? sel.photo.credit : '';
     await saveImage(blob).catch(() => {});
     startSession(game, bitmap, credit);
   } catch (e) {
@@ -372,6 +418,7 @@ function goHome() {
 
 function init() {
   buildCounts();
+  buildSources();
   updateStartPanel();
   void loadGallery(true);
   void refreshContinue();
