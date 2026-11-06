@@ -2,7 +2,7 @@ import './style.css';
 import { Board } from './board';
 import { previewSound, snapFeedback, unlockAudio, winFeedback } from './feedback';
 import { Game, type SavedGame, type TrayFilter } from './game';
-import { gridFor, PIECE_COUNTS, type ShapeStyle } from './geometry';
+import { gridFor, type ShapeStyle } from './geometry';
 import {
   fetchBlob,
   listCommons,
@@ -13,8 +13,14 @@ import {
   type RemotePhoto,
 } from './images';
 import {
+  addPieceCount,
   dragOffset,
   lsGet,
+  nearestCount,
+  pieceCountError,
+  pieceCounts,
+  removePieceCount,
+  resetPieceCounts,
   lsSet,
   offsetVector,
   setDragOffset,
@@ -36,6 +42,7 @@ type Selection =
 
 let selection: Selection | null = null;
 let pieceCount = Number(lsGet('pieces')) || 48;
+if (!pieceCounts.includes(pieceCount)) pieceCount = nearestCount(pieceCount, pieceCounts);
 let shapeStyle: ShapeStyle = lsGet('shapes') === 'unusual' ? 'unusual' : 'classic';
 let source: PhotoSource = SOURCES.find((s) => s.id === lsGet('source')) ?? SOURCES[0];
 let galleryPage = 1;
@@ -109,7 +116,8 @@ function updateStartPanel() {
 
 function buildCounts() {
   const wrap = $('counts');
-  for (const n of PIECE_COUNTS) {
+  wrap.replaceChildren();
+  for (const n of pieceCounts) {
     const b = document.createElement('button');
     b.textContent = String(n);
     b.dataset.n = String(n);
@@ -120,6 +128,59 @@ function buildCounts() {
     });
     wrap.append(b);
   }
+}
+
+/** Rebuilds the count choices after the list changed in Settings. */
+function countsChanged() {
+  if (!pieceCounts.includes(pieceCount)) {
+    pieceCount = nearestCount(pieceCount, pieceCounts);
+    lsSet('pieces', String(pieceCount));
+  }
+  buildCounts();
+  buildCountSettings();
+  updateStartPanel();
+}
+
+function buildCountSettings() {
+  const list = $('set-counts');
+  list.replaceChildren();
+  for (const n of pieceCounts) {
+    const li = document.createElement('li');
+    li.textContent = String(n);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'count-del';
+    del.setAttribute('aria-label', `Remove ${n} pieces`);
+    del.textContent = '×';
+    del.disabled = pieceCounts.length <= 1;
+    del.addEventListener('click', () => {
+      if (removePieceCount(n)) countsChanged();
+    });
+    li.append(del);
+    list.append(li);
+  }
+}
+
+function initCountSettings() {
+  const form = $<HTMLFormElement>('add-count');
+  const input = $<HTMLInputElement>('add-count-input');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const n = Number(input.value);
+    const error = pieceCountError(n, pieceCounts);
+    if (error) {
+      toast(error);
+      return;
+    }
+    addPieceCount(n);
+    input.value = '';
+    countsChanged();
+  });
+  $('btn-reset-counts').addEventListener('click', () => {
+    resetPieceCounts();
+    countsChanged();
+  });
+  buildCountSettings();
 }
 
 function markGallerySelection() {
@@ -418,6 +479,7 @@ function goHome() {
 
 function init() {
   buildCounts();
+  initCountSettings();
   buildSources();
   updateStartPanel();
   void loadGallery(true);

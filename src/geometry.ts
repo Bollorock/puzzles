@@ -37,8 +37,6 @@ export type Segment =
   | { kind: 'line'; to: Point }
   | { kind: 'bezier'; c1: Point; c2: Point; to: Point };
 
-export const PIECE_COUNTS = [12, 24, 48, 96, 150, 300, 500, 750, 1000] as const;
-
 /**
  * classic: a straight grid with round knobs.
  * unusual: a wobbly grid with a mix of knob shapes (keys, dovetails, arrows, double knobs).
