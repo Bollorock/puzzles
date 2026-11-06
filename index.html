@@ -175,6 +175,28 @@
             <button data-value="far" role="radio">Far</button>
           </div>
         </div>
+        <div class="setting">
+          <span id="counts-label">
+            Piece counts
+            <small class="muted">The choices offered when you start a puzzle</small>
+          </span>
+          <ul id="set-counts" class="count-list" aria-labelledby="counts-label"></ul>
+          <form id="add-count" class="add-count" novalidate>
+            <input
+              id="add-count-input"
+              type="number"
+              inputmode="numeric"
+              min="4"
+              max="2000"
+              step="1"
+              placeholder="Pieces, 4 to 2000"
+              aria-label="New piece count"
+              required
+            />
+            <button type="submit" class="btn small">Add</button>
+          </form>
+          <button id="btn-reset-counts" type="button" class="link-btn">Reset to default</button>
+        </div>
         <button id="btn-settings-close" class="btn primary wide">Done</button>
       </div>
     </div>

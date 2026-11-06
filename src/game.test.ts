@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { Game } from './game';
-import { generatePieces, gridFor, makeLayout, PIECE_COUNTS } from './geometry';
+import { generatePieces, gridFor, makeLayout } from './geometry';
+import { DEFAULT_PIECE_COUNTS } from './prefs';
 
 describe('gridFor', () => {
   it('gets close to the requested count with squarish pieces', () => {
-    for (const n of PIECE_COUNTS) {
+    for (const n of DEFAULT_PIECE_COUNTS) {
       for (const aspect of [1, 1.5, 0.75, 16 / 9]) {
         const { cols, rows } = gridFor(n, aspect);
         expect(Math.abs(cols * rows - n) / n).toBeLessThan(0.2);
